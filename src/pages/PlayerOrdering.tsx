@@ -3,6 +3,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { useNavigate } from "./router";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface PlayerOrderingProps {
   gameId: Id<"games">;
@@ -51,14 +54,14 @@ export default function PlayerOrdering({ gameId }: PlayerOrderingProps) {
   if (!isCreator) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl p-6 max-w-md">
-          <h2 className="text-xl font-bold text-green-900 mb-4">
-            Please Wait
-          </h2>
-          <p className="text-gray-700">
-            The host is arranging the seating order...
-          </p>
-        </div>
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Please Wait</CardTitle>
+            <CardDescription>
+              The host is arranging the seating order...
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
@@ -88,61 +91,64 @@ export default function PlayerOrdering({ gameId }: PlayerOrderingProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 p-4">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-xl p-6 mb-4">
-          <h1 className="text-2xl font-bold text-green-900 mb-2">
-            Arrange Seating
-          </h1>
-          <p className="text-gray-600 text-sm mb-4">
-            Drag players to arrange them around the table. Position 0 will be the first dealer.
-          </p>
-
-          <div className="space-y-2 mb-6">
-            {orderedPlayers.map((player, index) => (
-              <div
-                key={player._id}
-                className="bg-green-50 p-4 rounded-lg border-2 border-green-200"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                      {index}
+        <Card>
+          <CardHeader>
+            <CardTitle>Arrange Seating</CardTitle>
+            <CardDescription>
+              Order players around the table. Position 0 will be the first dealer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              {orderedPlayers.map((player, index) => (
+                <div
+                  key={player._id}
+                  className="bg-muted p-4 rounded-lg border-2 border-muted"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="default" className="w-10 h-10 flex items-center justify-center text-lg">
+                        {index}
+                      </Badge>
+                      <span className="font-medium">
+                        {player.userName || "Unknown Player"}
+                      </span>
                     </div>
-                    <span className="font-medium">
-                      {player.userName || "Unknown Player"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => movePlayer(index, Math.max(0, index - 1))}
-                      disabled={index === 0}
-                      className="bg-green-600 text-white w-10 h-10 rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() =>
-                        movePlayer(index, Math.min(orderedPlayers.length - 1, index + 1))
-                      }
-                      disabled={index === orderedPlayers.length - 1}
-                      className="bg-green-600 text-white w-10 h-10 rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                    >
-                      ↓
-                    </button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => movePlayer(index, Math.max(0, index - 1))}
+                        disabled={index === 0}
+                        size="icon"
+                        variant="outline"
+                      >
+                        ↑
+                      </Button>
+                      <Button
+                        onClick={() =>
+                          movePlayer(index, Math.min(orderedPlayers.length - 1, index + 1))
+                        }
+                        disabled={index === orderedPlayers.length - 1}
+                        size="icon"
+                        variant="outline"
+                      >
+                        ↓
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <button
-            onClick={handleSaveAndStart}
-            className="w-full bg-green-600 text-white font-bold py-4 rounded-lg hover:bg-green-700 transition-colors text-lg"
-          >
-            Start Game →
-          </button>
-        </div>
+            <Button
+              onClick={() => void handleSaveAndStart()}
+              className="w-full h-14 text-lg"
+              size="lg"
+            >
+              Start Game →
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-

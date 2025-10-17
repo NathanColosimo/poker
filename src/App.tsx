@@ -12,6 +12,33 @@ import GameLobby from "./pages/GameLobby";
 import PlayerOrdering from "./pages/PlayerOrdering";
 import GameTable from "./pages/GameTable";
 import { Id } from "../convex/_generated/dataModel";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const signInSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signUpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+});
 
 export default function App() {
   const route = useRoute();
@@ -58,6 +85,50 @@ function SignInForm() {
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [error, setError] = useState<string | null>(null);
 
+  const signInForm = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const signUpForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      name: "",
+    },
+  });
+
+  const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set("email", values.email);
+      formData.set("password", values.password);
+      formData.set("flow", "signIn");
+      await signIn("password", formData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign in");
+    }
+  };
+
+  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.set("email", values.email);
+      formData.set("password", values.password);
+      formData.set("name", values.name);
+      formData.set("flow", "signUp");
+      await signIn("password", formData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign up");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
@@ -66,92 +137,178 @@ function SignInForm() {
           <p className="text-green-200">Chip Manager</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-green-900 mb-6">
-            {flow === "signIn" ? "Sign In" : "Sign Up"}
-          </h2>
-
-          <form
-            className="space-y-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target as HTMLFormElement);
-              formData.set("flow", flow);
-              void signIn("password", formData).catch((error) => {
-                setError(error.message);
-              });
-            }}
-          >
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                type="email"
-                name="email"
-                placeholder="your@email.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Password
-              </label>
-              <input
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                type="password"
-                name="password"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {flow === "signUp" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Display Name
-                </label>
-                <input
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  type="text"
-                  name="name"
-                  placeholder="Your Name"
-                  required
-                />
-              </div>
-            )}
-
-            <button
-              className="w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors"
-              type="submit"
-            >
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">
               {flow === "signIn" ? "Sign In" : "Sign Up"}
-            </button>
+            </CardTitle>
+            <CardDescription>
+              {flow === "signIn"
+                ? "Welcome back! Sign in to your account"
+                : "Create a new account to get started"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {flow === "signIn" ? (
+              <Form {...signInForm}>
+                <form onSubmit={(e) => void signInForm.handleSubmit(handleSignIn)(e)} className="space-y-4">
+                  <FormField
+                    control={signInForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="email"
+                            placeholder="your@email.com" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <div className="text-center">
-              <button
-                type="button"
-                className="text-green-600 hover:text-green-700 text-sm font-medium"
-                onClick={() => {
-                  setFlow(flow === "signIn" ? "signUp" : "signIn");
-                  setError(null);
-                }}
-              >
-                {flow === "signIn"
-                  ? "Don't have an account? Sign up"
-                  : "Already have an account? Sign in"}
-              </button>
-            </div>
+                  <FormField
+                    control={signInForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password"
+                            placeholder="••••••••" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={signInForm.formState.isSubmitting}
+                  >
+                    {signInForm.formState.isSubmitting ? "Signing In..." : "Sign In"}
+                  </Button>
+
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={() => {
+                        setFlow("signUp");
+                        setError(null);
+                      }}
+                    >
+                      Don't have an account? Sign up
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                </form>
+              </Form>
+            ) : (
+              <Form {...signUpForm}>
+                <form onSubmit={(e) => void signUpForm.handleSubmit(handleSignUp)(e)} className="space-y-4">
+                  <FormField
+                    control={signUpForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="email"
+                            placeholder="your@email.com" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={signUpForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="password"
+                            placeholder="••••••••" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Must be at least 6 characters
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={signUpForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Display Name</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Your Name" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This is how other players will see you
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={signUpForm.formState.isSubmitting}
+                  >
+                    {signUpForm.formState.isSubmitting ? "Signing Up..." : "Sign Up"}
+                  </Button>
+
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="link"
+                      onClick={() => {
+                        setFlow("signIn");
+                        setError(null);
+                      }}
+                    >
+                      Already have an account? Sign in
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                </form>
+              </Form>
             )}
-          </form>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

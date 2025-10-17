@@ -2,54 +2,78 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useNavigate } from "./router";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
+const createGameSchema = z.object({
+  inviteCode: z.string().min(1, "Invite code is required"),
+  initialChips: z.number().min(1, "Must be at least 1 chip"),
+  smallBlind: z.number().min(1, "Must be at least 1"),
+  bigBlind: z.number().min(1, "Must be at least 1"),
+  bettingIncrement: z.number().min(1, "Must be at least 1"),
+});
+
+const joinGameSchema = z.object({
+  inviteCode: z.string().min(1, "Invite code is required"),
+});
 
 export default function Home() {
   const [mode, setMode] = useState<"menu" | "create" | "join">("menu");
-  const [inviteCode, setInviteCode] = useState("");
-  const [initialChips, setInitialChips] = useState(1000);
-  const [smallBlind, setSmallBlind] = useState(10);
-  const [bigBlind, setBigBlind] = useState(20);
-  const [bettingIncrement, setBettingIncrement] = useState(10);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const createGame = useMutation(api.games.createGame);
   const joinGame = useMutation(api.games.joinGameRequest);
   const navigate = useNavigate();
 
-  const handleCreateGame = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+  const createForm = useForm<z.infer<typeof createGameSchema>>({
+    resolver: zodResolver(createGameSchema),
+    defaultValues: {
+      inviteCode: "",
+      initialChips: 1000,
+      smallBlind: 10,
+      bigBlind: 20,
+      bettingIncrement: 10,
+    },
+  });
 
+  const joinForm = useForm<z.infer<typeof joinGameSchema>>({
+    resolver: zodResolver(joinGameSchema),
+    defaultValues: {
+      inviteCode: "",
+    },
+  });
+
+  const handleCreateGame = async (values: z.infer<typeof createGameSchema>) => {
+    setError(null);
     try {
-      const result = await createGame({
-        inviteCode,
-        initialChips,
-        smallBlind,
-        bigBlind,
-        bettingIncrement,
-      });
+      const result = await createGame(values);
       navigate(`/lobby/${result.gameId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create game");
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleJoinGame = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleJoinGame = async (values: z.infer<typeof joinGameSchema>) => {
     setError(null);
-    setLoading(true);
-
     try {
-      const result = await joinGame({ inviteCode });
+      const result = await joinGame(values);
       navigate(`/lobby/${result.gameId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to join game");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -63,19 +87,22 @@ export default function Home() {
           </div>
 
           <div className="space-y-4">
-            <button
+            <Button
               onClick={() => setMode("create")}
-              className="w-full bg-white text-green-900 font-bold py-4 px-6 rounded-lg shadow-lg hover:bg-green-50 transition-colors text-lg"
+              className="w-full h-14 text-lg"
+              size="lg"
             >
               Create New Game
-            </button>
+            </Button>
 
-            <button
+            <Button
               onClick={() => setMode("join")}
-              className="w-full bg-green-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg hover:bg-green-600 transition-colors text-lg"
+              className="w-full h-14 text-lg"
+              variant="secondary"
+              size="lg"
             >
               Join Existing Game
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -86,107 +113,138 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 p-4">
         <div className="max-w-md mx-auto">
-          <button
+          <Button
             onClick={() => {
               setMode("menu");
               setError(null);
+              createForm.reset();
             }}
+            variant="ghost"
             className="text-green-200 hover:text-white mb-4"
           >
             ← Back
-          </button>
+          </Button>
 
-          <div className="bg-white rounded-lg shadow-xl p-6">
-            <h2 className="text-2xl font-bold text-green-900 mb-6">
-              Create Game
-            </h2>
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Game</CardTitle>
+              <CardDescription>Set up your poker game settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...createForm}>
+                <form onSubmit={(e) => void createForm.handleSubmit(handleCreateGame)(e)} className="space-y-4">
+                  <FormField
+                    control={createForm.control}
+                    name="inviteCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Invite Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., POKER123" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Share this code with your friends to join
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            <form onSubmit={handleCreateGame} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Invite Code
-                </label>
-                <input
-                  type="text"
-                  value={inviteCode}
-                  onChange={(e) => setInviteCode(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  placeholder="e.g., POKER123"
-                  required
-                />
-              </div>
+                  <FormField
+                    control={createForm.control}
+                    name="initialChips"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Initial Chips</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Starting chip stack for each player
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Initial Chips
-                </label>
-                <input
-                  type="number"
-                  value={initialChips}
-                  onChange={(e) => setInitialChips(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  min="1"
-                  required
-                />
-              </div>
+                  <FormField
+                    control={createForm.control}
+                    name="smallBlind"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Small Blind</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Small Blind
-                </label>
-                <input
-                  type="number"
-                  value={smallBlind}
-                  onChange={(e) => setSmallBlind(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  min="1"
-                  required
-                />
-              </div>
+                  <FormField
+                    control={createForm.control}
+                    name="bigBlind"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Big Blind</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Big Blind
-                </label>
-                <input
-                  type="number"
-                  value={bigBlind}
-                  onChange={(e) => setBigBlind(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  min="1"
-                  required
-                />
-              </div>
+                  <FormField
+                    control={createForm.control}
+                    name="bettingIncrement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Betting Increment</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Minimum raise amount above current bet
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Betting Increment
-                </label>
-                <input
-                  type="number"
-                  value={bettingIncrement}
-                  onChange={(e) => setBettingIncrement(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  min="1"
-                  required
-                />
-              </div>
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              >
-                {loading ? "Creating..." : "Create Game"}
-              </button>
-            </form>
-          </div>
+                  <Button 
+                    type="submit" 
+                    disabled={createForm.formState.isSubmitting} 
+                    className="w-full"
+                  >
+                    {createForm.formState.isSubmitting ? "Creating..." : "Create Game"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -196,51 +254,61 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 p-4">
       <div className="max-w-md mx-auto">
-        <button
+        <Button
           onClick={() => {
             setMode("menu");
             setError(null);
+            joinForm.reset();
           }}
+          variant="ghost"
           className="text-green-200 hover:text-white mb-4"
         >
           ← Back
-        </button>
+        </Button>
 
-        <div className="bg-white rounded-lg shadow-xl p-6">
-          <h2 className="text-2xl font-bold text-green-900 mb-6">Join Game</h2>
+        <Card>
+          <CardHeader>
+            <CardTitle>Join Game</CardTitle>
+            <CardDescription>Enter the invite code to join</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...joinForm}>
+              <form onSubmit={(e) => void joinForm.handleSubmit(handleJoinGame)(e)} className="space-y-4">
+                <FormField
+                  control={joinForm.control}
+                  name="inviteCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Invite Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter invite code" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Ask the host for the game invite code
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <form onSubmit={handleJoinGame} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Invite Code
-              </label>
-              <input
-                type="text"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Enter invite code"
-                required
-              />
-            </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? "Joining..." : "Join Game"}
-            </button>
-          </form>
-        </div>
+                <Button 
+                  type="submit" 
+                  disabled={joinForm.formState.isSubmitting} 
+                  className="w-full"
+                >
+                  {joinForm.formState.isSubmitting ? "Joining..." : "Join Game"}
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-

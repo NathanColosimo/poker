@@ -4,6 +4,9 @@ import { Id } from "../../convex/_generated/dataModel";
 import PlayerPosition from "../components/PlayerPosition";
 import PotDisplay from "../components/PotDisplay";
 import BettingInterface from "../components/BettingInterface";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface GameTableProps {
   gameId: Id<"games">;
@@ -76,18 +79,18 @@ export default function GameTable({ gameId }: GameTableProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-900 via-green-800 to-green-900 flex flex-col">
       {/* Header */}
-      <div className="bg-green-950 bg-opacity-80 p-4 text-white">
+      <div className="bg-background/90 backdrop-blur-sm border-b p-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-xl font-bold">Texas Hold'em</h1>
-            <p className="text-xs text-green-300">Code: {game.inviteCode}</p>
+            <p className="text-xs text-muted-foreground">Code: {game.inviteCode}</p>
           </div>
           {currentHand && (
             <div className="text-right">
-              <div className="text-sm">Hand #{currentHand.handNumber}</div>
-              <div className="text-xs text-green-300 capitalize">
+              <div className="text-sm font-medium">Hand #{currentHand.handNumber}</div>
+              <Badge variant="secondary" className="text-xs capitalize">
                 {currentHand.currentBettingRound.replace("-", " ")}
-              </div>
+              </Badge>
             </div>
           )}
         </div>
@@ -141,40 +144,44 @@ export default function GameTable({ gameId }: GameTableProps) {
 
           {/* Game status messages */}
           {!currentHand && (
-            <div className="text-center bg-white rounded-lg shadow-xl p-6">
-              <p className="text-gray-700 mb-4">
-                {isCreator
-                  ? "Ready to start a new hand?"
-                  : "Waiting for host to start the next hand..."}
-              </p>
-              {canStartNewHand && (
-                <button
-                  onClick={() => void handleStartNewHand()}
-                  className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700"
-                >
-                  Start New Hand
-                </button>
-              )}
-            </div>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground mb-4">
+                  {isCreator
+                    ? "Ready to start a new hand?"
+                    : "Waiting for host to start the next hand..."}
+                </p>
+                {canStartNewHand && (
+                  <Button
+                    onClick={() => void handleStartNewHand()}
+                    size="lg"
+                  >
+                    Start New Hand
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           )}
 
           {currentHand && currentHand.currentBettingRound === "complete" && (
-            <div className="text-center bg-white rounded-lg shadow-xl p-6">
-              <p className="text-gray-700 mb-4">
-                Hand Complete! 
-                {isCreator
-                  ? " Click below to start the next hand."
-                  : " Waiting for host to start the next hand..."}
-              </p>
-              {canStartNewHand && (
-                <button
-                  onClick={() => void handleStartNewHand()}
-                  className="bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700"
-                >
-                  Start New Hand
-                </button>
-              )}
-            </div>
+            <Card className="max-w-md mx-auto">
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Hand Complete! 
+                  {isCreator
+                    ? " Click below to start the next hand."
+                    : " Waiting for host to start the next hand..."}
+                </p>
+                {canStartNewHand && (
+                  <Button
+                    onClick={() => void handleStartNewHand()}
+                    size="lg"
+                  >
+                    Start New Hand
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
@@ -187,7 +194,7 @@ export default function GameTable({ gameId }: GameTableProps) {
         currentHand.currentBettingRound !== "complete") && (
           <div className="sticky bottom-0">
             {!isMyTurn && (
-              <div className="bg-gray-800 text-white text-center py-2 text-sm">
+              <div className="bg-muted text-center py-2 text-sm">
                 Waiting for other players...
               </div>
             )}
@@ -207,11 +214,11 @@ export default function GameTable({ gameId }: GameTableProps) {
         myHandState &&
         (myHandState.status === "folded" || myHandState.status === "all-in") &&
         currentHand.currentBettingRound !== "complete") && (
-          <div className="sticky bottom-0 bg-gray-800 text-white text-center py-4">
+          <div className="sticky bottom-0 bg-muted text-center py-4">
             <p className="font-bold text-lg">
               {myHandState.status === "folded" ? "You Folded" : "All-In!"}
             </p>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-muted-foreground">
               Waiting for hand to complete...
             </p>
           </div>
@@ -219,4 +226,3 @@ export default function GameTable({ gameId }: GameTableProps) {
     </div>
   );
 }
-

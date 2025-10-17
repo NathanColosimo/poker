@@ -1,3 +1,5 @@
+import { Badge } from "@/components/ui/badge";
+
 interface PlayerAvatarProps {
   name: string;
   isDealer?: boolean;
@@ -16,27 +18,26 @@ export default function PlayerAvatar({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="relative">
-        <div className="bg-green-700 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+        <div className="bg-primary text-primary-foreground w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
           {name.slice(0, 2).toUpperCase()}
         </div>
         {isDealer && (
-          <div className="absolute -top-1 -right-1 bg-yellow-400 text-black w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
+          <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-yellow-400 text-black hover:bg-yellow-400">
             D
-          </div>
+          </Badge>
         )}
         {isSmallBlind && (
-          <div className="absolute -bottom-1 -right-1 bg-blue-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
+          <Badge className="absolute -bottom-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-blue-400 text-white hover:bg-blue-400">
             SB
-          </div>
+          </Badge>
         )}
         {isBigBlind && (
-          <div className="absolute -bottom-1 -right-1 bg-red-400 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold">
+          <Badge className="absolute -bottom-1 -right-1 w-5 h-5 p-0 flex items-center justify-center text-xs bg-red-400 text-white hover:bg-red-400">
             BB
-          </div>
+          </Badge>
         )}
       </div>
       <span className="text-sm font-medium truncate max-w-[100px]">{name}</span>
     </div>
   );
 }
-

@@ -1,5 +1,7 @@
 import PlayerAvatar from "./PlayerAvatar";
 import ChipDisplay from "./ChipDisplay";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 interface PlayerPositionProps {
   name: string;
@@ -23,10 +25,10 @@ export default function PlayerPosition({
   isBigBlind,
 }: PlayerPositionProps) {
   const getStatusColor = () => {
-    if (status === "folded") return "bg-gray-400";
-    if (status === "all-in") return "bg-purple-600";
-    if (isActive) return "bg-yellow-400 animate-pulse";
-    return "bg-green-600";
+    if (status === "folded") return "bg-muted";
+    if (status === "all-in") return "bg-purple-600 text-white";
+    if (isActive) return "bg-yellow-400 text-black animate-pulse";
+    return "bg-card";
   };
 
   const getStatusText = () => {
@@ -36,39 +38,40 @@ export default function PlayerPosition({
   };
 
   return (
-    <div
-      className={`${getStatusColor()} p-3 rounded-lg shadow-lg border-2 ${
-        isActive ? "border-yellow-600" : "border-transparent"
+    <Card
+      className={`${getStatusColor()} border-2 ${
+        isActive ? "border-yellow-600" : "border-border"
       }`}
     >
-      <PlayerAvatar
-        name={name}
-        isDealer={isDealer}
-        isSmallBlind={isSmallBlind}
-        isBigBlind={isBigBlind}
-        className="mb-2"
-      />
-      
-      <div className="text-white text-sm space-y-1">
-        <div className="flex justify-between items-center">
-          <span className="text-xs opacity-90">Chips:</span>
-          <ChipDisplay amount={chips} className="text-white" />
-        </div>
+      <CardContent className="p-3">
+        <PlayerAvatar
+          name={name}
+          isDealer={isDealer}
+          isSmallBlind={isSmallBlind}
+          isBigBlind={isBigBlind}
+          className="mb-2"
+        />
         
-        {currentBet > 0 && (
+        <div className="space-y-1 text-sm">
           <div className="flex justify-between items-center">
-            <span className="text-xs opacity-90">Bet:</span>
-            <ChipDisplay amount={currentBet} className="text-yellow-300" />
+            <span className="text-xs opacity-90">Chips:</span>
+            <ChipDisplay amount={chips} />
           </div>
-        )}
-        
-        {getStatusText() && (
-          <div className="text-center font-bold text-xs bg-black bg-opacity-30 py-1 rounded">
-            {getStatusText()}
-          </div>
-        )}
-      </div>
-    </div>
+          
+          {currentBet > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-xs opacity-90">Bet:</span>
+              <ChipDisplay amount={currentBet} className="text-yellow-600 dark:text-yellow-400" />
+            </div>
+          )}
+          
+          {getStatusText() && (
+            <Badge variant="secondary" className="w-full justify-center text-xs">
+              {getStatusText()}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
-
