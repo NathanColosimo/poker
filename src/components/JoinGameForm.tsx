@@ -1,6 +1,9 @@
 import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Controller, useForm } from "react-hook-form"
 import { useMutation } from "convex/react"
 import { useNavigate } from "react-router-dom"
+import * as z from "zod"
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,24 +17,37 @@ import {
 import { Input } from "@/components/ui/input"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 
+const joinGameSchema = z.object({
+  inviteCode: z
+    .string()
+    .length(6, "Invite code must be 6 characters")
+    .regex(/^[A-Z0-9]+$/, "Invite code must contain only letters and numbers"),
+})
+
+type JoinGameFormData = z.infer<typeof joinGameSchema>
+
 export function JoinGameForm() {
   const navigate = useNavigate()
   const joinGame = useMutation(api.games.joinGame)
-
-  const [inviteCode, setInviteCode] = useState("")
-  const [joinError, setJoinError] = useState<string | null>(null)
   const [isJoining, setIsJoining] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
-  const handleJoinGame = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setJoinError(null)
+  const form = useForm<JoinGameFormData>({
+    resolver: zodResolver(joinGameSchema),
+    defaultValues: {
+      inviteCode: "",
+    },
+  })
+
+  const handleSubmit = async (data: JoinGameFormData) => {
+    setServerError(null)
     setIsJoining(true)
 
     try {
-      const gameId = await joinGame({ inviteCode: inviteCode.toUpperCase() })
+      const gameId = await joinGame({ inviteCode: data.inviteCode })
       await navigate(`/game/${gameId}`)
     } catch (error) {
-      setJoinError(error instanceof Error ? error.message : "Failed to join game")
+      setServerError(error instanceof Error ? error.message : "Failed to join game")
     } finally {
       setIsJoining(false)
     }
@@ -46,22 +62,37 @@ export function JoinGameForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form id="join-game-form" onSubmit={(e) => void handleJoinGame(e)}>
+        <form id="join-game-form" onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(handleSubmit)(e); }}>
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="invite-code">Invite Code</FieldLabel>
-              <Input
-                id="invite-code"
-                type="text"
-                placeholder="ABC123"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-                maxLength={6}
-                className="uppercase"
-                autoComplete="off"
-              />
-              {joinError && <FieldError>{joinError}</FieldError>}
-            </Field>
+            <Controller
+              name="inviteCode"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="invite-code">Invite Code</FieldLabel>
+                  <Input
+                    {...field}
+                    id="invite-code"
+                    type="text"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="ABC123"
+                    maxLength={6}
+                    className="uppercase"
+                    autoComplete="off"
+                    onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
+            {serverError && (
+              <div className="rounded-md bg-destructive/10 border border-destructive/30 p-3">
+                <p className="text-destructive text-sm">{serverError}</p>
+              </div>
+            )}
           </FieldGroup>
         </form>
       </CardContent>
@@ -70,7 +101,7 @@ export function JoinGameForm() {
           type="submit"
           form="join-game-form"
           className="w-full"
-          disabled={isJoining || inviteCode.length !== 6}
+          disabled={isJoining}
         >
           {isJoining ? "Joining..." : "Join Game"}
         </Button>
@@ -78,4 +109,3 @@ export function JoinGameForm() {
     </Card>
   )
 }
-

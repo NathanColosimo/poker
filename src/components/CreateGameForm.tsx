@@ -1,6 +1,9 @@
 import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Controller, useForm } from "react-hook-form"
 import { useMutation } from "convex/react"
 import { useNavigate } from "react-router-dom"
+import * as z from "zod"
 import { api } from "../../convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,23 +17,49 @@ import {
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 
+const createGameSchema = z
+  .object({
+    initialChips: z
+      .number()
+      .min(1, "Initial chips must be at least 1")
+      .max(1000000, "Initial chips cannot exceed 1,000,000"),
+    smallBlind: z
+      .number()
+      .min(1, "Small blind must be at least 1"),
+    bigBlind: z
+      .number()
+      .min(1, "Big blind must be at least 1"),
+    bettingIncrement: z
+      .number()
+      .min(1, "Betting increment must be at least 1"),
+  })
+  .refine((data) => data.bigBlind > data.smallBlind, {
+    message: "Big blind must be greater than small blind",
+    path: ["bigBlind"],
+  })
+
+type CreateGameFormData = z.infer<typeof createGameSchema>
+
 export function CreateGameForm() {
   const navigate = useNavigate()
   const createGame = useMutation(api.games.createGame)
-
   const [isCreating, setIsCreating] = useState(false)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [gameSettings, setGameSettings] = useState({
-    initialChips: 1000,
-    smallBlind: 25,
-    bigBlind: 50,
-    bettingIncrement: 25,
+  const [showCustomize, setShowCustomize] = useState(false)
+
+  const form = useForm<CreateGameFormData>({
+    resolver: zodResolver(createGameSchema),
+    defaultValues: {
+      initialChips: 1000,
+      smallBlind: 25,
+      bigBlind: 50,
+      bettingIncrement: 25,
+    },
   })
 
-  const handleCreateGame = async () => {
+  const handleSubmit = async (data: CreateGameFormData) => {
     setIsCreating(true)
     try {
-      const { gameId } = await createGame(gameSettings)
+      const { gameId } = await createGame(data)
       await navigate(`/game/${gameId}`)
     } catch (error) {
       console.error("Failed to create game:", error)
@@ -38,6 +67,8 @@ export function CreateGameForm() {
       setIsCreating(false)
     }
   }
+
+  const currentValues = form.watch()
 
   return (
     <Card>
@@ -48,115 +79,122 @@ export function CreateGameForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {showCreateForm ? (
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="initial-chips">
-                Initial Chip Stack
-              </FieldLabel>
-              <Input
-                id="initial-chips"
-                type="number"
-                value={gameSettings.initialChips}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    initialChips: parseInt(e.target.value) || 0,
-                  })
-                }
-                min={1}
+        <form id="create-game-form" onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(handleSubmit)(e); }}>
+          {showCustomize ? (
+            <FieldGroup>
+              <Controller
+                name="initialChips"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="initial-chips">
+                      Initial Chip Stack
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="initial-chips"
+                      type="number"
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      min={1}
+                    />
+                  </Field>
+                )}
               />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="small-blind">Small Blind</FieldLabel>
-              <Input
-                id="small-blind"
-                type="number"
-                value={gameSettings.smallBlind}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    smallBlind: parseInt(e.target.value) || 0,
-                  })
-                }
-                min={1}
+              <Controller
+                name="smallBlind"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="small-blind">Small Blind</FieldLabel>
+                    <Input
+                      {...field}
+                      id="small-blind"
+                      type="number"
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      min={1}
+                    />
+                  </Field>
+                )}
               />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="big-blind">Big Blind</FieldLabel>
-              <Input
-                id="big-blind"
-                type="number"
-                value={gameSettings.bigBlind}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    bigBlind: parseInt(e.target.value) || 0,
-                  })
-                }
-                min={1}
+              <Controller
+                name="bigBlind"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="big-blind">Big Blind</FieldLabel>
+                    <Input
+                      {...field}
+                      id="big-blind"
+                      type="number"
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      min={1}
+                    />
+                  </Field>
+                )}
               />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="betting-increment">
-                Betting Increment
-              </FieldLabel>
-              <Input
-                id="betting-increment"
-                type="number"
-                value={gameSettings.bettingIncrement}
-                onChange={(e) =>
-                  setGameSettings({
-                    ...gameSettings,
-                    bettingIncrement: parseInt(e.target.value) || 0,
-                  })
-                }
-                min={1}
+              <Controller
+                name="bettingIncrement"
+                control={form.control}
+                render={({ field }) => (
+                  <Field>
+                    <FieldLabel htmlFor="betting-increment">
+                      Betting Increment
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="betting-increment"
+                      type="number"
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      min={1}
+                    />
+                  </Field>
+                )}
               />
-            </Field>
-          </FieldGroup>
-        ) : (
-          <div className="text-sm text-muted-foreground space-y-2">
-            <div className="flex justify-between">
-              <span>Initial Chips:</span>
-              <span className="font-medium text-foreground">
-                {gameSettings.initialChips}
-              </span>
+            </FieldGroup>
+          ) : (
+            <div className="text-sm text-muted-foreground space-y-2">
+              <div className="flex justify-between">
+                <span>Initial Chips:</span>
+                <span className="font-medium text-foreground">
+                  {currentValues.initialChips}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Small Blind:</span>
+                <span className="font-medium text-foreground">
+                  {currentValues.smallBlind}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Big Blind:</span>
+                <span className="font-medium text-foreground">
+                  {currentValues.bigBlind}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>Betting Increment:</span>
+                <span className="font-medium text-foreground">
+                  {currentValues.bettingIncrement}
+                </span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span>Small Blind:</span>
-              <span className="font-medium text-foreground">
-                {gameSettings.smallBlind}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Big Blind:</span>
-              <span className="font-medium text-foreground">
-                {gameSettings.bigBlind}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Betting Increment:</span>
-              <span className="font-medium text-foreground">
-                {gameSettings.bettingIncrement}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
+        </form>
       </CardContent>
       <CardFooter className="gap-2">
-        {showCreateForm ? (
+        {showCustomize ? (
           <>
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setShowCreateForm(false)}
+              onClick={() => setShowCustomize(false)}
             >
               Cancel
             </Button>
             <Button
+              type="submit"
+              form="create-game-form"
               className="flex-1"
-              onClick={() => void handleCreateGame()}
               disabled={isCreating}
             >
               {isCreating ? "Creating..." : "Create Game"}
@@ -167,13 +205,14 @@ export function CreateGameForm() {
             <Button
               variant="outline"
               className="flex-1"
-              onClick={() => setShowCreateForm(true)}
+              onClick={() => setShowCustomize(true)}
             >
               Customize
             </Button>
             <Button
+              type="submit"
+              form="create-game-form"
               className="flex-1"
-              onClick={() => void handleCreateGame()}
               disabled={isCreating}
             >
               {isCreating ? "Creating..." : "Create with Defaults"}
@@ -184,4 +223,3 @@ export function CreateGameForm() {
     </Card>
   )
 }
-

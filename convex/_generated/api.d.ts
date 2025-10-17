@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as games from "../games.js";
+import type * as hands from "../hands.js";
 import type * as http from "../http.js";
 import type * as queries from "../queries.js";
 
@@ -30,6 +31,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   games: typeof games;
+  hands: typeof hands;
   http: typeof http;
   queries: typeof queries;
 }>;
