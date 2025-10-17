@@ -259,3 +259,111 @@ export const getPlayerHandStates = query({
   },
 });
 
+/**
+ * Get all players in a game with their user names
+ */
+export const getGamePlayersWithNames = query({
+  args: {
+    gameId: v.id("games"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("players"),
+      _creationTime: v.number(),
+      gameId: v.id("games"),
+      userId: v.id("users"),
+      chips: v.number(),
+      seatPosition: v.optional(v.number()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("active"),
+        v.literal("folded"),
+        v.literal("all-in"),
+        v.literal("out")
+      ),
+      userName: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const players = await ctx.db
+      .query("players")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .collect();
+    
+    // Fetch user names for all players
+    const result = [];
+    for (const player of players) {
+      const user = await ctx.db.get(player.userId);
+      result.push({
+        ...player,
+        userName: user?.name,
+      });
+    }
+    
+    return result;
+  },
+});
+
+/**
+ * Get pending join requests for a game with user names (creator only)
+ */
+export const getPendingRequestsWithNames = query({
+  args: {
+    gameId: v.id("games"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("players"),
+      _creationTime: v.number(),
+      gameId: v.id("games"),
+      userId: v.id("users"),
+      chips: v.number(),
+      seatPosition: v.optional(v.number()),
+      status: v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("active"),
+        v.literal("folded"),
+        v.literal("all-in"),
+        v.literal("out")
+      ),
+      userName: v.optional(v.string()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) {
+      return [];
+    }
+
+    // Only creator can see pending requests
+    if (game.creatorId !== userId) {
+      return [];
+    }
+
+    const pendingPlayers = await ctx.db
+      .query("players")
+      .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+    
+    // Fetch user names for all pending players
+    const result = [];
+    for (const player of pendingPlayers) {
+      const user = await ctx.db.get(player.userId);
+      result.push({
+        ...player,
+        userName: user?.name,
+      });
+    }
+    
+    return result;
+  },
+});
+

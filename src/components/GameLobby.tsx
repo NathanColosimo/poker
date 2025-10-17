@@ -31,8 +31,9 @@ export function GameLobby({ gameId, game, myPlayerState }: GameLobbyProps) {
   const rejectJoinRequest = useMutation(api.games.rejectJoinRequest)
   const setPlayerOrder = useMutation(api.games.setPlayerOrder)
 
-  const players = useQuery(api.queries.getGamePlayers, { gameId })
-  const pendingRequests = useQuery(api.queries.getPendingRequests, { gameId })
+  // Fetch players and pending requests with their user names included
+  const players = useQuery(api.queries.getGamePlayersWithNames, { gameId })
+  const pendingRequests = useQuery(api.queries.getPendingRequestsWithNames, { gameId })
 
   const isCreator = myPlayerState.userId === game.creatorId
   const approvedPlayers = players?.filter((p) => p.status === "approved") || []
@@ -120,25 +121,22 @@ export function GameLobby({ gameId, game, myPlayerState }: GameLobbyProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {approvedPlayers.map((player) => {
-              const user = useQuery(api.users.getUserById, { userId: player.userId })
-              return (
-                <div
-                  key={player._id}
-                  className="flex items-center justify-between p-2 rounded border"
-                >
-                  <div>
-                    <span className="font-medium">
-                      {user?.name || "Player"} {player.userId === game.creatorId && "(Host)"}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {player.chips} chips
-                    </span>
-                  </div>
-                  <Badge variant="secondary">Approved</Badge>
+            {approvedPlayers.map((player) => (
+              <div
+                key={player._id}
+                className="flex items-center justify-between p-2 rounded border"
+              >
+                <div>
+                  <span className="font-medium">
+                    {player.userName || "Player"} {player.userId === game.creatorId && "(Host)"}
+                  </span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {player.chips} chips
+                  </span>
                 </div>
-              )
-            })}
+                <Badge variant="secondary">Approved</Badge>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -156,7 +154,7 @@ export function GameLobby({ gameId, game, myPlayerState }: GameLobbyProps) {
                   key={request._id}
                   className="flex items-center justify-between p-2 rounded border"
                 >
-                  <span className="font-medium">New Player</span>
+                  <span className="font-medium">{request.userName || "Player"}</span>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
