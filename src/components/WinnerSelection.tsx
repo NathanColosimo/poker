@@ -11,6 +11,7 @@ interface WinnerSelectionProps {
   handId: Id<"hands">
   isSelecting: boolean
   isApproving: boolean
+  myPlayerId: Id<"players">
 }
 
 export function WinnerSelection({
@@ -18,6 +19,7 @@ export function WinnerSelection({
   handId,
   isSelecting,
   isApproving,
+  myPlayerId,
 }: WinnerSelectionProps) {
   const toggleWinner = useMutation(api.winners.toggleWinner)
   const approveWinners = useMutation(api.winners.approveWinners)
@@ -98,7 +100,7 @@ export function WinnerSelection({
 
   if (isApproving) {
     const myHandState = playerHandStates?.find((state) => 
-      players?.some((p) => p._id === state.playerId)
+      state.playerId === myPlayerId
     )
     const hasApproved = myHandState?.hasApprovedWinners === true
 

@@ -117,8 +117,70 @@ export const checkAutoApproval = internalMutation({
     }
 
     // Transition to approving-winners
+    const approvalStartTime = Date.now();
     await ctx.db.patch(args.handId, {
       currentBettingRound: "approving-winners",
+      winnerSelectionLastUpdated: approvalStartTime,
+    });
+
+    // Schedule timeout check for 30 seconds
+    await ctx.scheduler.runAfter(30000, internal.winners.checkApprovalTimeout, {
+      handId: args.handId,
+      approvalStartTime,
+    });
+
+    return null;
+  },
+});
+
+/**
+ * Check if approval phase has timed out and reset to selecting-winners (internal)
+ */
+export const checkApprovalTimeout = internalMutation({
+  args: {
+    handId: v.id("hands"),
+    approvalStartTime: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const hand = await ctx.db.get(args.handId);
+    if (!hand) {
+      return null;
+    }
+
+    // Check if we're still in approving-winners state
+    if (hand.currentBettingRound !== "approving-winners") {
+      return null;
+    }
+
+    // Check if the approval phase timestamp matches (no new approval phase started)
+    if (hand.winnerSelectionLastUpdated !== args.approvalStartTime) {
+      return null;
+    }
+
+    // 30 seconds have passed without reaching majority approval
+    // Reset to selecting-winners
+    await ctx.db.patch(args.handId, {
+      currentBettingRound: "selecting-winners",
+      winnerSelectionLastUpdated: Date.now(),
+    });
+
+    // Reset all approval flags
+    const playerStates = await ctx.db
+      .query("playerHandStates")
+      .withIndex("by_handId", (q) => q.eq("handId", args.handId))
+      .collect();
+
+    for (const state of playerStates) {
+      await ctx.db.patch(state._id, {
+        hasApprovedWinners: false,
+      });
+    }
+
+    // Schedule check for auto-approval after 5 seconds (restart the cycle)
+    await ctx.scheduler.runAfter(5000, internal.winners.checkAutoApproval, {
+      handId: args.handId,
+      lastUpdated: Date.now(),
     });
 
     return null;

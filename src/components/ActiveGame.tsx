@@ -101,6 +101,7 @@ export function ActiveGame({ gameId, game, myPlayerState }: ActiveGameProps) {
           handId={currentHand._id}
           isSelecting={isSelecting}
           isApproving={isApproving}
+          myPlayerId={myPlayerState._id}
         />
       )}
 
