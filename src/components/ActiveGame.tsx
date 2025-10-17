@@ -71,7 +71,6 @@ export function ActiveGame({ gameId, game, myPlayerState }: ActiveGameProps) {
   const isSelecting = currentHand.currentBettingRound === "selecting-winners"
   const isApproving = currentHand.currentBettingRound === "approving-winners"
   const isDistributed = currentHand.currentBettingRound === "distributed"
-  const isComplete = currentHand.currentBettingRound === "complete"
   const isBetting =
     currentHand.currentBettingRound === "pre-flop" ||
     currentHand.currentBettingRound === "flop" ||
@@ -93,20 +92,6 @@ export function ActiveGame({ gameId, game, myPlayerState }: ActiveGameProps) {
           bettingIncrement={game.settings.bettingIncrement}
           isMyTurn={isMyTurn}
         />
-      )}
-
-      {/* Hand Complete - Transition to Winner Selection */}
-      {isComplete && (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground mb-4">
-              Hand complete! Select the winner(s) based on the cards shown.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Pot: <span className="font-bold text-foreground">{currentHand.pot}</span> chips
-            </p>
-          </CardContent>
-        </Card>
       )}
 
       {/* Winner Selection */}

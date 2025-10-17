@@ -583,7 +583,7 @@ export const completeHand = internalMutation({
     } else {
       // Multiple players remain, need to select winners
       await ctx.db.patch(args.handId, {
-        currentBettingRound: "complete",
+        currentBettingRound: "selecting-winners",
       });
     }
 
