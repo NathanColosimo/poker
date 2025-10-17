@@ -9,7 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as games from "../games.js";
 import type * as http from "../http.js";
+import type * as queries from "../queries.js";
 
 import type {
   ApiFromModules,
@@ -27,7 +29,9 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  games: typeof games;
   http: typeof http;
+  queries: typeof queries;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

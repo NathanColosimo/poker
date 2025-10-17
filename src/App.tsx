@@ -1,111 +1,128 @@
-"use client";
+"use client"
 
-import {
-  Authenticated,
-  Unauthenticated,
-  useConvexAuth,
-  useMutation,
-  useQuery,
-} from "convex/react";
-import { api } from "../convex/_generated/api";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useState } from "react";
+import { Authenticated, Unauthenticated, useConvexAuth } from "convex/react"
+import { useAuthActions } from "@convex-dev/auth/react"
+import { useState } from "react"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { SignInForm } from "@/components/SignInForm"
+import { SignUpForm } from "@/components/SignUpForm"
+import { Home } from "@/pages/Home"
+import { GamePage } from "@/pages/GamePage"
+import { Button } from "@/components/ui/button"
 
 export default function App() {
   return (
-    <>
-      <header className="sticky top-0 z-10 bg-light dark:bg-dark p-4 border-b-2 border-slate-200 dark:border-slate-800">
-        Convex + React + Convex Auth
-        <SignOutButton />
-      </header>
-      <main className="p-8 flex flex-col gap-16">
-        <h1 className="text-4xl font-bold text-center">
-          Convex + React + Convex Auth
-        </h1>
-        <Authenticated>
-        </Authenticated>
-        <Unauthenticated>
-          <SignInForm />
-        </Unauthenticated>
-      </main>
-    </>
-  );
+    <BrowserRouter>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1">
+          <Routes>
+            <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+            <Route path="/game/:gameId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  )
 }
 
-function SignOutButton() {
-  const { isAuthenticated } = useConvexAuth();
-  const { signOut } = useAuthActions();
-  return (
-    <>
-      {isAuthenticated && (
-        <button
-          className="bg-slate-200 dark:bg-slate-800 text-dark dark:text-light rounded-md px-2 py-1"
-          onClick={() => void signOut()}
-        >
-          Sign out
-        </button>
-      )}
-    </>
-  );
-}
+function Header() {
+  const { isAuthenticated } = useConvexAuth()
+  const { signOut } = useAuthActions()
 
-function SignInForm() {
-  const { signIn } = useAuthActions();
-  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
-  const [error, setError] = useState<string | null>(null);
   return (
-    <div className="flex flex-col gap-8 w-96 mx-auto">
-      <p>Log in to see the numbers</p>
-      <form
-        className="flex flex-col gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const formData = new FormData(e.target as HTMLFormElement);
-          formData.set("flow", flow);
-          void signIn("password", formData).catch((error) => {
-            setError(error.message);
-          });
-        }}
-      >
-        <input
-          className="bg-light dark:bg-dark text-dark dark:text-light rounded-md p-2 border-2 border-slate-200 dark:border-slate-800"
-          type="email"
-          name="email"
-          placeholder="Email"
-        />
-        <input
-          className="bg-light dark:bg-dark text-dark dark:text-light rounded-md p-2 border-2 border-slate-200 dark:border-slate-800"
-          type="password"
-          name="password"
-          placeholder="Password"
-        />
-        <button
-          className="bg-dark dark:bg-light text-light dark:text-dark rounded-md"
-          type="submit"
-        >
-          {flow === "signIn" ? "Sign in" : "Sign up"}
-        </button>
-        <div className="flex flex-row gap-2">
-          <span>
-            {flow === "signIn"
-              ? "Don't have an account?"
-              : "Already have an account?"}
-          </span>
-          <span
-            className="text-dark dark:text-light underline hover:no-underline cursor-pointer"
-            onClick={() => setFlow(flow === "signIn" ? "signUp" : "signIn")}
+    <header className="sticky top-0 z-10 bg-card border-b px-4 py-3 shadow-sm">
+      <div className="max-w-6xl mx-auto flex justify-between items-center">
+        <div className="font-bold text-xl">Texas Hold'em Chip Manager</div>
+        {isAuthenticated && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void signOut()}
           >
-            {flow === "signIn" ? "Sign up instead" : "Sign in instead"}
-          </span>
-        </div>
-        {error && (
-          <div className="bg-red-500/20 border-2 border-red-500/50 rounded-md p-2">
-            <p className="text-dark dark:text-light font-mono text-xs">
-              Error signing in: {error}
-            </p>
-          </div>
+            Sign Out
+          </Button>
         )}
-      </form>
+      </div>
+    </header>
+  )
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Authenticated>{children}</Authenticated>
+      <Unauthenticated>
+        <Navigate to="/auth" replace />
+      </Unauthenticated>
+    </>
+  )
+}
+
+function AuthPage() {
+  const { isAuthenticated } = useConvexAuth()
+  const { signIn } = useAuthActions()
+  const [flow, setFlow] = useState<"signIn" | "signUp">("signIn")
+  const [error, setError] = useState<string | null>(null)
+
+  // If already authenticated, redirect to home
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
+
+  const handleSignIn = async (data: { email: string; password: string }) => {
+    setError(null)
+    const formData = new FormData()
+    formData.append("email", data.email)
+    formData.append("password", data.password)
+    formData.append("flow", "signIn")
+
+    try {
+      await signIn("password", formData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign in")
+      throw err
+    }
+  }
+
+  const handleSignUp = async (data: { email: string; password: string }) => {
+    setError(null)
+    const formData = new FormData()
+    formData.append("email", data.email)
+    formData.append("password", data.password)
+    formData.append("flow", "signUp")
+
+    try {
+      await signIn("password", formData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to sign up")
+      throw err
+    }
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
+      {flow === "signIn" ? (
+        <SignInForm
+          onSubmit={handleSignIn}
+          onSwitchToSignUp={() => {
+            setFlow("signUp")
+            setError(null)
+          }}
+          error={error || undefined}
+        />
+      ) : (
+        <SignUpForm
+          onSubmit={handleSignUp}
+          onSwitchToSignIn={() => {
+            setFlow("signIn")
+            setError(null)
+          }}
+          error={error || undefined}
+        />
+      )}
     </div>
-  );
+  )
 }

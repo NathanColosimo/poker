@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/card"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -70,7 +69,7 @@ export function SignInForm({ onSubmit, onSwitchToSignUp, error }: SignInFormProp
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form id="sign-in-form" onSubmit={() => form.handleSubmit(handleSubmit)}>
+        <form id="sign-in-form" onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(handleSubmit)(e); }}>
           <FieldGroup>
             {/* Email Field */}
             <Controller

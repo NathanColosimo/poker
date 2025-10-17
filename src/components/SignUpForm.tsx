@@ -85,7 +85,7 @@ export function SignUpForm({ onSubmit, onSwitchToSignIn, error }: SignUpFormProp
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form id="sign-up-form" onSubmit={() => form.handleSubmit(handleSubmit)}>
+        <form id="sign-up-form" onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(handleSubmit)(e); }}>
           <FieldGroup>
             {/* Email Field */}
             <Controller
