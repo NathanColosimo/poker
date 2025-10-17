@@ -1,6 +1,7 @@
 import { JoinGameForm } from "@/components/JoinGameForm"
 import { CreateGameForm } from "@/components/CreateGameForm"
 import { ProfileSection } from "@/components/ProfileSection"
+import { GamesList } from "@/components/GamesList"
 
 export function Home() {
   return (
@@ -12,6 +13,7 @@ export function Home() {
         </div>
 
         <ProfileSection />
+        <GamesList />
         <JoinGameForm />
         <CreateGameForm />
       </div>

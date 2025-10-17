@@ -358,3 +358,34 @@ export const getGame = query({
   },
 });
 
+/**
+ * Cancel a game and set status to finished (creator only)
+ */
+export const cancelGame = mutation({
+  args: {
+    gameId: v.id("games"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+
+    const game = await ctx.db.get(args.gameId);
+    if (!game) {
+      throw new Error("Game not found");
+    }
+
+    // Only creator can cancel the game
+    if (game.creatorId !== userId) {
+      throw new Error("Only the game creator can cancel the game");
+    }
+
+    // Update game status to finished
+    await ctx.db.patch(args.gameId, { status: "finished" });
+
+    return null;
+  },
+});
+

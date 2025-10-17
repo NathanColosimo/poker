@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
 import { api } from "../../convex/_generated/api"
 import { Id } from "../../convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,8 @@ import { ActiveGame } from "@/components/ActiveGame"
 export function GamePage() {
   const { gameId } = useParams<{ gameId: string }>()
   const navigate = useNavigate()
+  const currentUser = useQuery(api.users.getCurrentUser)
+  const cancelGameMutation = useMutation(api.games.cancelGame)
 
   const game = useQuery(
     api.games.getGame,
@@ -40,7 +42,7 @@ export function GamePage() {
     )
   }
 
-  if (game === undefined || myPlayerState === undefined || players === undefined) {
+  if (game === undefined || myPlayerState === undefined || players === undefined || currentUser === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -80,9 +82,38 @@ export function GamePage() {
     )
   }
 
+  // Check if current user is the game creator (host)
+  const isHost = currentUser && game.creatorId === currentUser._id
+
+  // Handle game cancellation
+  const handleCancelGame = () => {
+    if (!confirm("Are you sure you want to cancel this game? This action cannot be undone.")) {
+      return
+    }
+    // Fire and forget the mutation, handling errors silently
+    void cancelGameMutation({ gameId: game._id }).then(() => {
+      void navigate("/")
+    }).catch((error) => {
+      console.error("Failed to cancel game:", error)
+    })
+  }
+
   return (
     <div className="min-h-screen p-4 bg-background">
       <div className="max-w-4xl mx-auto">
+        {/* Cancel Game Button - Visible only to host when game is not finished */}
+        {isHost && game.status !== "finished" && (
+          <div className="mb-4 flex justify-end">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleCancelGame}
+            >
+              Cancel Game
+            </Button>
+          </div>
+        )}
+
         {/* Lobby State */}
         {game.status === "lobby" && (
           <GameLobby
