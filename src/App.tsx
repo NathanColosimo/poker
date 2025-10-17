@@ -46,7 +46,7 @@ function Header() {
               <HomeIcon className="w-5 h-5" />
             </Button>
           )}
-          <div className="font-bold text-xl">Texas Hold'em Chip Manager</div>
+          <div className="font-bold text-xl">Poker Chip Manager</div>
         </div>
         {isAuthenticated && (
           <Button
