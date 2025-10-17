@@ -32,14 +32,31 @@ export const startNewHand = mutation({
       throw new Error("Cannot start a hand in current game state");
     }
 
-    // Get all approved players with seat positions
-    const players = await ctx.db
+    // Get all players with seat positions who have chips
+    const allPlayers = await ctx.db
       .query("players")
       .withIndex("by_gameId", (q) => q.eq("gameId", args.gameId))
-      .filter((q) => q.eq(q.field("status"), "approved"))
       .collect();
 
-    const seatedPlayers = players.filter((p) => p.seatPosition !== undefined);
+    // Reset player statuses for new hand
+    for (const player of allPlayers) {
+      if (player.chips > 0 && player.seatPosition !== undefined) {
+        // Players with chips can play
+        await ctx.db.patch(player._id, {
+          status: "approved",
+        });
+      } else if (player.chips === 0) {
+        // Players with no chips are out
+        await ctx.db.patch(player._id, {
+          status: "out",
+        });
+      }
+    }
+
+    // Get players who can play (have chips and a seat)
+    const seatedPlayers = allPlayers.filter(
+      (p) => p.seatPosition !== undefined && p.chips > 0
+    );
 
     if (seatedPlayers.length < 2) {
       throw new Error("Need at least 2 players to start a hand");
@@ -205,12 +222,13 @@ export const initializeHandStates = internalMutation({
 });
 
 /**
- * Commit a betting action (bet, call, raise, fold, all-in)
+ * Commit a betting action (bet, call, raise, fold, check, all-in)
  */
 export const commitAction = mutation({
   args: {
     handId: v.id("hands"),
     betAmount: v.number(),
+    isFold: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -261,14 +279,24 @@ export const commitAction = mutation({
     // Validate action
     const amountToCall = hand.currentBet - playerState.currentBet;
     
-    // Fold (betAmount = 0)
-    if (args.betAmount === 0) {
+    // Fold
+    if (args.isFold) {
       await ctx.db.patch(playerState._id, {
         status: "folded",
         hasActed: true,
       });
       await ctx.db.patch(player._id, {
         status: "folded",
+      });
+    }
+    // Check (betAmount = 0 and no amount to call)
+    else if (args.betAmount === 0) {
+      if (amountToCall > 0) {
+        throw new Error("Cannot check when there is a bet to call");
+      }
+      // Just mark as acted, no chips change
+      await ctx.db.patch(playerState._id, {
+        hasActed: true,
       });
     }
     // Call or Raise
@@ -402,6 +430,17 @@ export const checkBettingRoundComplete = internalMutation({
       .query("playerHandStates")
       .withIndex("by_handId", (q) => q.eq("handId", args.handId))
       .collect();
+
+    // Check if only one player remains (not folded)
+    const playersNotFolded = playerStates.filter((s) => s.status !== "folded");
+    
+    if (playersNotFolded.length === 1) {
+      // Only one player left, auto-complete the hand
+      await ctx.runMutation(internal.hands.completeHand, {
+        handId: args.handId,
+      });
+      return null;
+    }
 
     const activePlayers = playerStates.filter(
       (s) => s.status !== "folded" && s.status !== "all-in"

@@ -29,6 +29,18 @@ export function WinnerSelection({
     ?.filter((p) => p.seatPosition !== undefined)
     .sort((a, b) => a.seatPosition! - b.seatPosition!) || []
 
+  // Fetch all user data
+  const userIds = seatedPlayers.map((p) => p.userId)
+  const usersData = userIds.map((userId) => 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useQuery(api.users.getUserById, { userId })
+  )
+
+  const getUserName = (userId: Id<"users">) => {
+    const userIndex = userIds.indexOf(userId)
+    return usersData[userIndex]?.name || "Player"
+  }
+
   const getPlayerHandState = (playerId: Id<"players">) => {
     return playerHandStates?.find((state) => state.playerId === playerId)
   }
@@ -54,6 +66,7 @@ export function WinnerSelection({
               const handState = getPlayerHandState(player._id)
               const isWinner = handState?.isWinner === true
               const isFolded = handState?.status === "folded"
+              const playerName = getUserName(player.userId)
 
               return (
                 <Button
@@ -64,7 +77,7 @@ export function WinnerSelection({
                   disabled={isFolded}
                 >
                   <span>
-                    Seat {(player.seatPosition ?? 0) + 1} - Player {player._id.slice(-4)}
+                    Seat {(player.seatPosition ?? 0) + 1} - {playerName}
                     {isFolded && " (Folded)"}
                   </span>
                   {isWinner && <Check className="h-4 w-4" />}
@@ -99,13 +112,14 @@ export function WinnerSelection({
             <div className="text-sm font-medium">Selected Winners:</div>
             {winners.map((winnerState) => {
               const player = players?.find((p) => p._id === winnerState.playerId)
+              const playerName = player ? getUserName(player.userId) : "Player"
               return (
                 <div
                   key={winnerState._id}
                   className="flex items-center justify-between p-2 rounded border bg-green-500/10 border-green-500/30"
                 >
                   <span className="font-medium">
-                    Seat {(player?.seatPosition ?? 0) + 1} - Player {player?._id.slice(-4)}
+                    Seat {(player?.seatPosition ?? 0) + 1} - {playerName}
                   </span>
                   <Badge variant="secondary" className="bg-green-500/20">
                     Winner

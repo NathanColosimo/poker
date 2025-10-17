@@ -83,19 +83,22 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
             The host is arranging the seating order...
           </p>
           <div className="mt-4 space-y-2">
-            {orderedPlayers.map((player, index) => (
-              <div
-                key={player._id}
-                className="flex items-center justify-between p-2 rounded border"
-              >
-                <div>
-                  <span className="font-medium">Seat {index + 1}</span>
-                  <span className="text-sm text-muted-foreground ml-2">
-                    Player {player.userId === game.creatorId && "(Host)"}
-                  </span>
+            {orderedPlayers.map((player, index) => {
+              const user = useQuery(api.users.getUserById, { userId: player.userId })
+              return (
+                <div
+                  key={player._id}
+                  className="flex items-center justify-between p-2 rounded border"
+                >
+                  <div>
+                    <span className="font-medium">Seat {index + 1}</span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {user?.name || "Player"} {player.userId === game.creatorId && "(Host)"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>
@@ -141,7 +144,10 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
               <div className="flex-1">
                 <div className="font-medium">Seat {index + 1}</div>
                 <div className="text-sm text-muted-foreground">
-                  Player {player.userId === game.creatorId && "(Host)"}
+                  {(() => {
+                    const user = useQuery(api.users.getUserById, { userId: player.userId })
+                    return user?.name || "Player"
+                  })()} {player.userId === game.creatorId && "(Host)"}
                 </div>
               </div>
             </div>

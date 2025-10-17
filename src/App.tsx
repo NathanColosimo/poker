@@ -31,8 +31,8 @@ function Header() {
   const { signOut } = useAuthActions()
 
   return (
-    <header className="sticky top-0 z-10 bg-card border-b px-4 py-3 shadow-sm">
-      <div className="max-w-6xl mx-auto flex justify-between items-center">
+    <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 py-3 shadow-sm">
+      <div className="max-w-4xl mx-auto flex justify-between items-center">
         <div className="font-bold text-xl">Texas Hold'em Chip Manager</div>
         {isAuthenticated && (
           <Button

@@ -120,22 +120,25 @@ export function GameLobby({ gameId, game, myPlayerState }: GameLobbyProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {approvedPlayers.map((player) => (
-              <div
-                key={player._id}
-                className="flex items-center justify-between p-2 rounded border"
-              >
-                <div>
-                  <span className="font-medium">
-                    Player {player.userId === game.creatorId && "(Host)"}
-                  </span>
-                  <span className="text-sm text-muted-foreground ml-2">
-                    {player.chips} chips
-                  </span>
+            {approvedPlayers.map((player) => {
+              const user = useQuery(api.users.getUserById, { userId: player.userId })
+              return (
+                <div
+                  key={player._id}
+                  className="flex items-center justify-between p-2 rounded border"
+                >
+                  <div>
+                    <span className="font-medium">
+                      {user?.name || "Player"} {player.userId === game.creatorId && "(Host)"}
+                    </span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {player.chips} chips
+                    </span>
+                  </div>
+                  <Badge variant="secondary">Approved</Badge>
                 </div>
-                <Badge variant="secondary">Approved</Badge>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>

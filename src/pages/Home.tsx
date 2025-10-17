@@ -1,5 +1,6 @@
 import { JoinGameForm } from "@/components/JoinGameForm"
 import { CreateGameForm } from "@/components/CreateGameForm"
+import { ProfileSection } from "@/components/ProfileSection"
 
 export function Home() {
   return (
@@ -10,6 +11,7 @@ export function Home() {
           <p className="text-muted-foreground">Chip Manager</p>
         </div>
 
+        <ProfileSection />
         <JoinGameForm />
         <CreateGameForm />
       </div>

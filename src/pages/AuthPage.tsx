@@ -31,9 +31,10 @@ export function AuthPage() {
     }
   }
 
-  const handleSignUp = async (data: { email: string; password: string }) => {
+  const handleSignUp = async (data: { name: string; email: string; password: string }) => {
     setError(null)
     const formData = new FormData()
+    formData.append("name", data.name)
     formData.append("email", data.email)
     formData.append("password", data.password)
     formData.append("flow", "signUp")

@@ -44,11 +44,24 @@ export function BettingInterface({
     }
   }
 
-  const handleFold = async () => {
+  const handleCheck = async () => {
     setError(null)
     setIsSubmitting(true)
     try {
       await commitAction({ handId, betAmount: 0 })
+      setBetAmount(0)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to check")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleFold = async () => {
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      await commitAction({ handId, betAmount: 0, isFold: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fold")
     } finally {
@@ -174,12 +187,22 @@ export function BettingInterface({
           >
             Fold
           </Button>
-          <Button
-            onClick={() => void handleCommit()}
-            disabled={isSubmitting || betAmount === 0}
-          >
-            {isSubmitting ? "Committing..." : `Commit ${betAmount > 0 ? `(${betAmount})` : ""}`}
-          </Button>
+          {amountToCall === 0 && betAmount === 0 ? (
+            <Button
+              onClick={() => void handleCheck()}
+              disabled={isSubmitting}
+              variant="default"
+            >
+              {isSubmitting ? "Checking..." : "Check"}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => void handleCommit()}
+              disabled={isSubmitting || betAmount === 0}
+            >
+              {isSubmitting ? "Committing..." : `Commit ${betAmount > 0 ? `(${betAmount})` : ""}`}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

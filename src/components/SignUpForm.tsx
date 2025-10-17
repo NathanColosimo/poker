@@ -26,6 +26,11 @@ import { Input } from "@/components/ui/input"
 // Schema validation for sign up form
 const signUpSchema = z
   .object({
+    name: z
+      .string()
+      .min(1, "Name is required")
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name must be at most 50 characters"),
     email: z
       .string()
       .min(1, "Email is required")
@@ -59,6 +64,7 @@ export function SignUpForm({ onSubmit, onSwitchToSignIn, error }: SignUpFormProp
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -87,6 +93,28 @@ export function SignUpForm({ onSubmit, onSwitchToSignIn, error }: SignUpFormProp
       <CardContent>
         <form id="sign-up-form" onSubmit={(e) => { e.preventDefault(); void form.handleSubmit(handleSubmit)(e); }}>
           <FieldGroup>
+            {/* Name Field */}
+            <Controller
+              name="name"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="sign-up-name">Name</FieldLabel>
+                  <Input
+                    {...field}
+                    id="sign-up-name"
+                    type="text"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="Your name"
+                    autoComplete="name"
+                  />
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+
             {/* Email Field */}
             <Controller
               name="email"
