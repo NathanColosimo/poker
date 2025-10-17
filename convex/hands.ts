@@ -274,6 +274,20 @@ export const commitAction = mutation({
     // Call or Raise
     else {
       const actualBet = Math.min(args.betAmount, player.chips);
+      
+      // Validate bet amount
+      if (actualBet < amountToCall && actualBet < player.chips) {
+        throw new Error(`Must bet at least ${amountToCall} to call or go all-in`);
+      }
+      
+      // If raising, must raise by at least the betting increment
+      if (actualBet > amountToCall) {
+        const raiseAmount = actualBet - amountToCall;
+        if (raiseAmount < game.settings.bettingIncrement && actualBet < player.chips) {
+          throw new Error(`Raise must be at least ${game.settings.bettingIncrement}`);
+        }
+      }
+
       const newCurrentBet = playerState.currentBet + actualBet;
 
       // Update player chips
@@ -428,7 +442,10 @@ export const advanceBettingRound = internalMutation({
       turn: "river",
       river: "complete",
       complete: "complete",
-    }[hand.currentBettingRound] as "pre-flop" | "flop" | "turn" | "river" | "complete";
+      "selecting-winners": "selecting-winners",
+      "approving-winners": "approving-winners",
+      distributed: "distributed",
+    }[hand.currentBettingRound] as "pre-flop" | "flop" | "turn" | "river" | "complete" | "selecting-winners" | "approving-winners" | "distributed";
 
     if (nextRound === "complete") {
       await ctx.runMutation(internal.hands.completeHand, {
@@ -485,7 +502,7 @@ export const advanceBettingRound = internalMutation({
 });
 
 /**
- * Complete the hand (internal)
+ * Complete the hand and transition to winner selection (internal)
  */
 export const completeHand = internalMutation({
   args: {
@@ -498,13 +515,38 @@ export const completeHand = internalMutation({
       return null;
     }
 
-    // Mark hand as complete
-    await ctx.db.patch(args.handId, {
-      currentBettingRound: "complete",
-    });
+    // Check if only one player remains (all others folded)
+    const playerStates = await ctx.db
+      .query("playerHandStates")
+      .withIndex("by_handId", (q) => q.eq("handId", args.handId))
+      .collect();
 
-    // Note: Pot distribution would happen here in a real app
-    // For this chip tracker, users handle the actual poker results manually
+    const playersNotFolded = playerStates.filter((s) => s.status !== "folded");
+
+    if (playersNotFolded.length === 1) {
+      // Auto-win for the last player standing
+      await ctx.db.patch(playersNotFolded[0]._id, {
+        isWinner: true,
+        hasApprovedWinners: true,
+      });
+
+      // Auto-distribute
+      const player = await ctx.db.get(playersNotFolded[0].playerId);
+      if (player) {
+        await ctx.db.patch(player._id, {
+          chips: player.chips + hand.pot,
+        });
+      }
+
+      await ctx.db.patch(args.handId, {
+        currentBettingRound: "distributed",
+      });
+    } else {
+      // Multiple players remain, need to select winners
+      await ctx.db.patch(args.handId, {
+        currentBettingRound: "complete",
+      });
+    }
 
     return null;
   },

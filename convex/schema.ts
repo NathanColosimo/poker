@@ -58,11 +58,15 @@ export default defineSchema({
       v.literal("flop"),
       v.literal("turn"),
       v.literal("river"),
-      v.literal("complete")
+      v.literal("complete"),
+      v.literal("selecting-winners"), // Players are selecting winners
+      v.literal("approving-winners"), // Players are approving winner selection
+      v.literal("distributed") // Pot has been distributed
     ),
     pot: v.number(), // Total chips in the pot
     currentBet: v.number(), // Highest bet in the current round
     activePlayerPosition: v.number(), // Seat position of player whose turn it is
+    winnerSelectionLastUpdated: v.optional(v.number()), // Timestamp of last winner selection change
   })
     .index("by_gameId", ["gameId"])
     .index("by_gameId_and_handNumber", ["gameId", "handNumber"]),
@@ -80,6 +84,8 @@ export default defineSchema({
       v.literal("all-in") // All chips committed
     ),
     hasActed: v.boolean(), // Whether player has acted in current betting round
+    isWinner: v.optional(v.boolean()), // Marked as winner of this hand
+    hasApprovedWinners: v.optional(v.boolean()), // Has approved the winner selection
   })
     .index("by_handId", ["handId"])
     .index("by_handId_and_playerId", ["handId", "playerId"]),

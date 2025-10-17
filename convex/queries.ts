@@ -184,3 +184,78 @@ export const getMyGames = query({
   },
 });
 
+/**
+ * Get the current hand for a game
+ */
+export const getCurrentHand = query({
+  args: {
+    gameId: v.id("games"),
+  },
+  returns: v.union(
+    v.object({
+      _id: v.id("hands"),
+      _creationTime: v.number(),
+      gameId: v.id("games"),
+      handNumber: v.number(),
+      dealerPosition: v.number(),
+      currentBettingRound: v.union(
+        v.literal("pre-flop"),
+        v.literal("flop"),
+        v.literal("turn"),
+        v.literal("river"),
+        v.literal("complete"),
+        v.literal("selecting-winners"),
+        v.literal("approving-winners"),
+        v.literal("distributed")
+      ),
+      pot: v.number(),
+      currentBet: v.number(),
+      activePlayerPosition: v.number(),
+      winnerSelectionLastUpdated: v.optional(v.number()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    const game = await ctx.db.get(args.gameId);
+    if (!game || !game.currentHandId) {
+      return null;
+    }
+
+    return await ctx.db.get(game.currentHandId);
+  },
+});
+
+/**
+ * Get player hand states for current hand
+ */
+export const getPlayerHandStates = query({
+  args: {
+    handId: v.id("hands"),
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("playerHandStates"),
+      _creationTime: v.number(),
+      handId: v.id("hands"),
+      playerId: v.id("players"),
+      currentBet: v.number(),
+      totalBet: v.number(),
+      status: v.union(
+        v.literal("waiting"),
+        v.literal("active"),
+        v.literal("folded"),
+        v.literal("all-in")
+      ),
+      hasActed: v.boolean(),
+      isWinner: v.optional(v.boolean()),
+      hasApprovedWinners: v.optional(v.boolean()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("playerHandStates")
+      .withIndex("by_handId", (q) => q.eq("handId", args.handId))
+      .collect();
+  },
+});
+

@@ -13,6 +13,7 @@ import type * as games from "../games.js";
 import type * as hands from "../hands.js";
 import type * as http from "../http.js";
 import type * as queries from "../queries.js";
+import type * as winners from "../winners.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   hands: typeof hands;
   http: typeof http;
   queries: typeof queries;
+  winners: typeof winners;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 
