@@ -18,58 +18,68 @@ interface PlayerOrderingProps {
 }
 
 export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingProps) {
-  const players = useQuery(api.queries.getGamePlayers, { gameId })
+  // Fetch players with their names included to avoid nested queries
+  const players = useQuery(api.queries.getGamePlayersWithNames, { gameId })
   const setPlayerOrder = useMutation(api.games.setPlayerOrder)
   const startNewHand = useMutation(api.hands.startNewHand)
 
+  // Get approved players sorted by seat position
   const approvedPlayers = players?.filter((p) => p.status === "approved") || []
+  const sortedPlayers = approvedPlayers.sort((a, b) => (a.seatPosition ?? 0) - (b.seatPosition ?? 0))
   
-  const [orderedPlayers, setOrderedPlayers] = useState(
-    approvedPlayers
-      .sort((a, b) => (a.seatPosition ?? 0) - (b.seatPosition ?? 0))
-  )
+  // Track if a mutation is in progress
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const isCreator = myPlayerState.userId === game.creatorId
 
-  // Update ordered players when data changes
-  if (players && orderedPlayers.length !== approvedPlayers.length) {
-    setOrderedPlayers(
-      approvedPlayers.sort((a, b) => (a.seatPosition ?? 0) - (b.seatPosition ?? 0))
-    )
-  }
-
-  const movePlayerUp = (index: number) => {
+  const movePlayerUp = async (index: number) => {
     if (index === 0) return
-    const newOrder = [...orderedPlayers]
+    
+    // Create new order with swapped players
+    const newOrder = [...sortedPlayers]
     ;[newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]]
-    setOrderedPlayers(newOrder)
+    
+    // Update seat positions immediately
+    setIsUpdating(true)
+    try {
+      const playerOrder = newOrder.map((player, i) => ({
+        playerId: player._id,
+        seatPosition: i,
+      }))
+      await setPlayerOrder({ gameId, playerOrder })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
-  const movePlayerDown = (index: number) => {
-    if (index === orderedPlayers.length - 1) return
-    const newOrder = [...orderedPlayers]
+  const movePlayerDown = async (index: number) => {
+    if (index === sortedPlayers.length - 1) return
+    
+    // Create new order with swapped players
+    const newOrder = [...sortedPlayers]
     ;[newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]]
-    setOrderedPlayers(newOrder)
-  }
-
-  const handleSaveOrder = async () => {
-    const playerOrder = orderedPlayers.map((player, index) => ({
-      playerId: player._id,
-      seatPosition: index,
-    }))
-    await setPlayerOrder({ gameId, playerOrder })
+    
+    // Update seat positions immediately
+    setIsUpdating(true)
+    try {
+      const playerOrder = newOrder.map((player, i) => ({
+        playerId: player._id,
+        seatPosition: i,
+      }))
+      await setPlayerOrder({ gameId, playerOrder })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const handleStartGame = async () => {
-    // Save order first
-    const playerOrder = orderedPlayers.map((player, index) => ({
-      playerId: player._id,
-      seatPosition: index,
-    }))
-    await setPlayerOrder({ gameId, playerOrder })
-    
-    // Start first hand
-    await startNewHand({ gameId })
+    setIsUpdating(true)
+    try {
+      // Start first hand
+      await startNewHand({ gameId })
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   if (!isCreator) {
@@ -83,22 +93,19 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
             The host is arranging the seating order...
           </p>
           <div className="mt-4 space-y-2">
-            {orderedPlayers.map((player, index) => {
-              const user = useQuery(api.users.getUserById, { userId: player.userId })
-              return (
-                <div
-                  key={player._id}
-                  className="flex items-center justify-between p-2 rounded border"
-                >
-                  <div>
-                    <span className="font-medium">Seat {index + 1}</span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {user?.name || "Player"} {player.userId === game.creatorId && "(Host)"}
-                    </span>
-                  </div>
+            {sortedPlayers.map((player, index) => (
+              <div
+                key={player._id}
+                className="flex items-center justify-between p-2 rounded border"
+              >
+                <div>
+                  <span className="font-medium">Seat {index + 1}</span>
+                  <span className="text-sm text-muted-foreground ml-2">
+                    {player.userName || "Player"} {player.userId === game.creatorId && "(Host)"}
+                  </span>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -116,7 +123,7 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
         </p>
 
         <div className="space-y-2">
-          {orderedPlayers.map((player, index) => (
+          {sortedPlayers.map((player, index) => (
             <div
               key={player._id}
               className="flex items-center gap-2 p-2 rounded border bg-card"
@@ -126,8 +133,8 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
                   size="icon"
                   variant="ghost"
                   className="h-6 w-6"
-                  onClick={() => movePlayerUp(index)}
-                  disabled={index === 0}
+                  onClick={() => void movePlayerUp(index)}
+                  disabled={index === 0 || isUpdating}
                 >
                   <ChevronUp className="h-4 w-4" />
                 </Button>
@@ -135,8 +142,8 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
                   size="icon"
                   variant="ghost"
                   className="h-6 w-6"
-                  onClick={() => movePlayerDown(index)}
-                  disabled={index === orderedPlayers.length - 1}
+                  onClick={() => void movePlayerDown(index)}
+                  disabled={index === sortedPlayers.length - 1 || isUpdating}
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
@@ -144,31 +151,21 @@ export function PlayerOrdering({ gameId, game, myPlayerState }: PlayerOrderingPr
               <div className="flex-1">
                 <div className="font-medium">Seat {index + 1}</div>
                 <div className="text-sm text-muted-foreground">
-                  {(() => {
-                    const user = useQuery(api.users.getUserById, { userId: player.userId })
-                    return user?.name || "Player"
-                  })()} {player.userId === game.creatorId && "(Host)"}
+                  {player.userName || "Player"} {player.userId === game.creatorId && "(Host)"}
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => void handleSaveOrder()}
-          >
-            Save Order
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={() => void handleStartGame()}
-          >
-            Start Game
-          </Button>
-        </div>
+        <Button
+          className="w-full"
+          size="lg"
+          onClick={() => void handleStartGame()}
+          disabled={isUpdating}
+        >
+          Start Game
+        </Button>
       </CardContent>
     </Card>
   )
