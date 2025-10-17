@@ -1,126 +1,45 @@
-# Texas Hold'em Chip Manager
+# Welcome to your Convex + React (Vite) + Convex Auth app
 
-A mobile-optimized poker chip management app for in-person Texas Hold'em games. Play with physical cards while the app handles all chip tracking, betting rounds, and game state.
+This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
 
-## Features
+After the initial setup (<2 minutes) you'll have a working full-stack app using:
 
-- **Invite-Based Games**: Create a game with a custom invite code and approve join requests
-- **Full Texas Hold'em Betting**: Complete betting rounds (pre-flop, flop, turn, river) with proper bet/call/raise/fold mechanics
-- **Auto-Rotating Dealer & Blinds**: Automatically rotates dealer button and blind positions each hand
-- **Real-Time Updates**: Powered by Convex for instant synchronization across all players
-- **Mobile-First**: Optimized for phones and tablets with touch-friendly controls
-- **Customizable Settings**:
-  - Initial chip stack
-  - Small blind amount
-  - Big blind amount
-  - Betting increment
+- Convex as your backend (database, server logic)
+- [React](https://react.dev/) as your frontend (web page interactivity)
+- [Vite](https://vitest.dev/) for optimized web hosting
+- [Tailwind](https://tailwindcss.com/) for building great looking UI
+- [Convex Auth](https://labs.convex.dev/auth) for authentication
 
-## Technology Stack
+## Get started
 
-- **Frontend**: React 19 + Vite
-- **Backend**: Convex (real-time database and backend)
-- **Styling**: Tailwind CSS v4
-- **Authentication**: Convex Auth
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm (recommended) or npm
-
-### Installation
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm dev
-```
-
-The app will open at `http://localhost:5173` with Convex backend running in the background.
-
-### First Time Setup
-
-1. Create a Convex account at https://convex.dev
-2. Run `pnpm dev` and follow the prompts to link your project
-3. The database schema will be automatically deployed
-
-## How to Play
-
-### Creating a Game
-
-1. Sign in with email/password
-2. Click "Create Game"
-3. Set your game settings:
-   - Initial chip stack (e.g., 1000)
-   - Small blind (e.g., 10)
-   - Big blind (e.g., 20)
-   - Betting increment (e.g., 10)
-4. Set an invite code
-5. Share the invite code with your friends
-
-### Joining a Game
-
-1. Sign in with email/password
-2. Click "Join Game"
-3. Enter the invite code
-4. Wait for the game creator to approve your request
-
-### Game Flow
-
-1. **Lobby**: Creator approves pending players
-2. **Seat Ordering**: Creator arranges players in seat order
-3. **Game Start**: First hand begins with dealer button and blinds
-4. **Betting Rounds**: Each player sets their bet amount and commits:
-   - The app enforces proper bet/call/raise amounts
-   - Automatically handles all-ins and folds
-   - Advances to next round when all players have acted
-5. **Next Hand**: Creator starts the next hand when ready
-
-## Game Rules
-
-- Texas Hold'em only
-- Players must have enough chips to call or fold
-- Raises must be at least the betting increment above current bet
-- Players who run out of chips are eliminated
-- Dealer button and blinds auto-rotate clockwise each hand
-- Once the game starts, no new players can join (feature coming later)
-
-## Development
-
-```bash
-# Run frontend and backend
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Preview production build
-pnpm preview
-
-# Lint code
-pnpm lint
-```
-
-## Project Structure
+If you just cloned this codebase and didn't use `npm create convex`, run:
 
 ```
-poker/
-├── convex/              # Backend code (Convex functions)
-│   ├── games.ts        # Game management functions
-│   ├── hands.ts        # Hand/betting logic
-│   ├── queries.ts      # Query functions
-│   └── schema.ts       # Database schema
-├── src/
-│   ├── components/     # Reusable React components
-│   ├── pages/          # Page components
-│   ├── App.tsx         # Main app with routing
-│   └── main.tsx        # Entry point
-└── public/             # Static assets
+npm install
+npm run dev
 ```
 
-## License
+If you're reading this README on GitHub and want to use this template, run:
 
-See LICENSE.txt
+```
+npm create convex@latest -- -t react-vite-convexauth
+```
+
+For more information on how to configure Convex Auth, check out the [Convex Auth docs](https://labs.convex.dev/auth/).
+
+For more examples of different Convex Auth flows, check out this [example repo](https://www.convex.dev/templates/convex-auth).
+
+## Learn more
+
+To learn more about developing your project with Convex, check out:
+
+- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
+- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
+- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
+
+## Join the community
+
+Join thousands of developers building full-stack apps with Convex:
+
+- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
+- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
