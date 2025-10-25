@@ -81,18 +81,6 @@ This will start both the Convex backend and the Vite frontend in development mod
 When creating a game, you can customize:
 
 - **Initial Chip Stack**: Starting chips for each player (e.g., 1000)
-- **Small Blind**: Amount for small blind (e.g., 5)
-- **Big Blind**: Amount for big blind (e.g., 10)
-- **Betting Increment**: Minimum raise amount (e.g., 10)
-
-## Learn More
-
-- [Convex Documentation](https://docs.convex.dev/)
-- [Convex Auth Documentation](https://labs.convex.dev/auth)
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/)
-
-## License
-
-See LICENSE.txt
+- **Small Blind**: Amount for small blind (e.g., 25)
+- **Big Blind**: Amount for big blind (e.g., 50)
+- **Betting Increment**: Minimum raise amount (e.g., 25)
